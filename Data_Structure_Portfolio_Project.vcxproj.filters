@@ -30,5 +30,8 @@
     <ClCompile Include="Project_04.cpp">
       <Filter>소스 파일\src</Filter>
     </ClCompile>
+    <ClCompile Include="Project_05.cpp">
+      <Filter>소스 파일\src</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
