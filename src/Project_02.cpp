@@ -1,143 +1,190 @@
 /*
-================================================================================
-프로그램명: 은행 업무 시뮬레이터
-설명: 이 프로그램은 원형 큐를 사용하여 은행 업무 시뮬레이션을 수행합니다.
-      고객들이 랜덤한 시간 간격으로 도착하며, 각 고객은 서비스 시간(업무 시간)을 가집니다.
-      고객들은 큐에 들어간 후 순서대로 처리되며, 60초 동안 시뮬레이션이 진행됩니다.
-================================================================================
+  프로그램: 미로 탈출 (Depth First Search, DFS)
+  목적: 주어진 미로(maze)에서 시작점 'S'에서 출구 'E'로 가는 경로를 찾고,
+       경로가 존재하면 해당 경로를 '*' 문자로 표시하여 출력하는 프로그램.
+  특징: 스택(Stack) 자료구조를 이용하여 DFS 알고리즘을 구현함.
 */
 
 #define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <stdlib.h>
 
-#include <stdio.h>      // 입력 및 출력 관련 함수 제공
-#include <stdlib.h>     // rand, srand, malloc 등 메모리 관련 함수 제공
-#include <time.h>       // 시간 관련 함수 제공 (time 함수)
-#include <windows.h>    // Sleep 함수 사용을 위함 (윈도우에서 1초 대기 효과)
+#define MAX 100  // 미로 최대 크기 (100x100)
 
-// 큐에 저장할 최대 고객 수 설정
-#define MAX_QUEUE_SIZE 10 // 원형 큐의 최대 크기
-
-// 고객 구조체: 고객의 번호와 업무 시간을 저장
+// 좌표를 나타내기 위한 구조체
 typedef struct {
-    int id;          // 고객 번호
-    int serviceTime; // 고객 업무 시간 (초)
-} Customer;
+    int x, y;  // 미로 내에서의 행과 열 좌표
+} Point;
 
-// 원형 큐 구조체: 고객 데이터를 저장하는 배열과 큐 관리 변수들
+// 스택 구조체 (Point 배열과 top 인덱스 포함)
 typedef struct {
-    Customer data[MAX_QUEUE_SIZE]; // 고객 데이터를 저장할 배열
-    int front;                     // 큐 앞쪽 인덱스
-    int rear;                      // 큐 뒷쪽 인덱스
-    int count;                     // 큐에 저장된 고객 수
-} Queue;
+    Point data[MAX]; // 스택에 저장할 Point 배열
+    int top;         // 스택의 최상단 인덱스 (비어있으면 -1)
+} Stack;
 
-// 큐 초기화 함수: front, rear, count를 0으로 초기화
-void initQueue(Queue* q) {
-    q->front = 0;
-    q->rear = 0;
-    q->count = 0;
+// 스택 초기화 함수: 스택을 빈 상태로 설정 (top = -1)
+void initStack(Stack* s) {
+    s->top = -1;
 }
 
-// 큐가 비어있는지 확인하는 함수: count가 0이면 비어있음
-int isEmpty(Queue* q) {
-    return q->count == 0;
+// 스택이 비어있는지 확인하는 함수
+// 비어있으면 1(true), 아니면 0(false) 반환
+int isEmpty(Stack* s) {
+    return s->top == -1;
 }
 
-// 큐가 가득 찼는지 확인하는 함수: count가 MAX_QUEUE_SIZE와 같으면 가득 참
-int isFull(Queue* q) {
-    return q->count == MAX_QUEUE_SIZE;
+// 스택이 가득 찼는지 확인하는 함수
+// 가득 차면 1(true), 아니면 0(false) 반환
+int isFull(Stack* s) {
+    return s->top == MAX - 1;
 }
 
-// 큐에 고객을 추가하는 함수
-// 큐가 가득 찬 경우, 고객 추가 불가 메시지를 출력하고 함수 종료
-void enqueue(Queue* q, Customer item) {
-    if (isFull(q)) {
-        printf("[ 큐가 가득 찼습니다! 고객 %d는 대기열에 못 들어갑니다. ]\n", item.id);
-        return;
+// 스택에 새로운 Point 추가하기 (push 함수)
+// 만약 스택이 가득 찼으면 오류 메시지 출력 후 종료
+void push(Stack* s, Point p) {
+    if (isFull(s)) {
+        printf("스택이 가득 찼습니다!\n");
+        exit(1);
     }
-    q->data[q->rear] = item;                        // rear 위치에 고객 추가
-    q->rear = (q->rear + 1) % MAX_QUEUE_SIZE;         // 원형으로 rear 인덱스 업데이트
-    q->count++;                                     // 큐에 고객 수 1 증가
-    printf("[ 고객 %d 대기열에 추가 (업무시간: %d초) ]\n", item.id, item.serviceTime);
+    s->data[++(s->top)] = p;  // top을 1 증가시키고 해당 위치에 값 저장
 }
 
-// 큐에서 고객을 꺼내는 함수
-// 큐가 비었으면 기본값(-1)을 가진 Customer 반환
-Customer dequeue(Queue* q) {
-    Customer item = { -1, -1 }; // 기본값 설정
-    if (isEmpty(q)) {
-        return item;
+// 스택에서 마지막에 추가된 Point를 제거 및 반환 (pop 함수)
+// 만약 스택이 비어있으면 오류 메시지 출력 후 종료
+Point pop(Stack* s) {
+    if (isEmpty(s)) {
+        printf("스택이 비어있습니다!\n");
+        exit(1);
     }
-    item = q->data[q->front];                       // front 위치의 고객 데이터를 가져옴
-    q->front = (q->front + 1) % MAX_QUEUE_SIZE;       // 원형으로 front 인덱스 업데이트
-    q->count--;                                     // 큐에 고객 수 1 감소
-    return item;
+    return s->data[(s->top)--]; // 현재 top의 값을 반환 후 top 감소
 }
 
-// 고객 처리 시뮬레이션 함수
-// 각 고객의 업무 시간을 카운트다운하며 처리하는 과정 시뮬레이션
-void processCustomer(Customer c) {
-    printf("지금 처리할 고객: 고객#%d\n", c.id);
-    // 서비스 시간을 0까지 카운트다운 하며 1초 대기
-    for (int i = c.serviceTime; i >= 0; i--) {
-        printf("%d ", i);
-        fflush(stdout);       // 출력 버퍼를 즉시 출력하기 위해 사용
-        Sleep(1000);          // 1초 대기 (1000 밀리초)
+// 스택의 마지막 요소를 확인하는 함수 (제거하지 않고 반환)
+// 스택이 비어있으면 오류 메시지 출력 후 종료
+Point peek(Stack* s) {
+    if (isEmpty(s)) {
+        printf("스택이 비어있습니다!\n");
+        exit(1);
     }
-    printf("\n<고객 %d 처리 완료: %d초>\n\n", c.id, c.serviceTime);
+    return s->data[s->top]; // top 위치의 Point 반환
 }
 
+// 미로 크기 및 미로 정보를 저장하는 전역 변수
+int N, M;                // 미로의 행(N)과 열(M) 크기
+char maze[MAX][MAX];     // 미로 배열: 문자로 저장 (S, E, 0, 1)
+int visited[MAX][MAX];   // 방문 여부 배열 (1: 방문, 0: 미방문)
+
+// 이동 방향 배열 (상, 하, 좌, 우 순서)
+int dx[4] = { -1, 1, 0, 0 }; // 행 변화량
+int dy[4] = { 0, 0, -1, 1 }; // 열 변화량
+
+// 주어진 (x, y)가 미로 범위 내에 있는지 검사하는 함수
+// 유효한 좌표이면 1(true), 아니면 0(false)
+int isValid(int x, int y) {
+    return (x >= 0 && x < N&& y >= 0 && y < M);
+}
+
+// 메인 함수: 미로 입력, DFS 탐색 수행 및 결과 출력
 int main() {
-    // 시뮬레이션에 사용할 큐 초기화
-    Queue q;
-    initQueue(&q);
+    Point start, end; // 시작점(S)과 출구(E)의 좌표 저장 변수
+    Stack stack;      // DFS 탐색용 스택
+    initStack(&stack); // 스택 초기화
 
-    // 랜덤 시드 초기화 (현재 시간 사용)
-    srand((unsigned int)time(NULL));
+    // 1. 미로 크기 입력 받기
+    printf("미로 크기 입력 (행 열): ");
+    scanf("%d %d", &N, &M);
 
-    int currentTime = 0;                     // 시뮬레이션 시작 시각 (0초부터 시작)
-    int nextArrival = rand() % 5 + 3;          // 첫 고객 도착 시간: 3~7초 사이 랜덤
-    int customerID = 1;                      // 고객 ID 시작 번호
-
-    // 시뮬레이션 시작 메시지 출력
-    printf("=== 은행 업무 시뮬레이터 시작 ===\n");
-
-    // 60초 시뮬레이션 루프
-    while (1) {
-        printf("현재 시각: %d초\n", currentTime);
-
-        // 고객 도착 여부 확인: 현재 시각이 다음 도착 시간과 일치하면 새 고객 생성
-        if (currentTime == nextArrival) {
-            Customer newCustomer;
-            newCustomer.id = customerID++;          // 고객 번호 설정 후 증가
-            newCustomer.serviceTime = rand() % 11 + 5; // 서비스 시간: 5~15초 랜덤
-
-            // 새 고객 도착 메시지 출력
-            printf("[ 다음 고객 도착 : 고객#%d, 업무시간 %d초 ]\n", newCustomer.id, newCustomer.serviceTime);
-            enqueue(&q, newCustomer);                // 큐에 새 고객 추가
-
-            // 다음 고객 도착 시간 재설정 (현재 시각 + 3~7초 랜덤)
-            nextArrival = currentTime + (rand() % 5 + 3);
+    // 2. 미로 정보 입력 및 시작점과 출구 위치 찾기
+    printf("미로 입력 (S=시작, E=출구, 0=길, 1=벽):\n");
+    for (int i = 0; i < N; i++) {
+        scanf("%s", maze[i]);  // 한 행 문자열 입력
+        for (int j = 0; j < M; j++) {
+            // 시작점 좌표 저장
+            if (maze[i][j] == 'S') {
+                start.x = i;
+                start.y = j;
+            }
+            // 출구 좌표 저장
+            else if (maze[i][j] == 'E') {
+                end.x = i;
+                end.y = j;
+            }
+            visited[i][j] = 0;  // 방문 여부 초기화 (0: 방문 안함)
         }
-
-        // 큐에 대기 중인 고객이 있으면, 고객을 꺼내어 서비스 처리 시작
-        if (!isEmpty(&q)) {
-            Customer current = dequeue(&q);
-            processCustomer(current);
-        }
-        else {
-            // 큐가 비었으면 "대기중" 메시지 출력 후 1초 대기
-            printf("처리할 고객 없음. 1초 대기 중...\n\n");
-            Sleep(1000);
-        }
-
-        currentTime++;  // 현재 시각 1초 증가
-
-        // 60초 시뮬레이션 종료
-        if (currentTime > 60) break;
     }
 
-    // 시뮬레이션 종료 메시지 출력
-    printf("=== 시뮬레이션 종료 ===\n");
-    return 0;
+    // 3. 시작점을 스택에 넣고 방문 처리
+    push(&stack, start);
+    visited[start.x][start.y] = 1;
+
+    int found = 0; // 출구에 도달했는지 여부 표시 (0: 미발견, 1: 발견)
+
+    // 4. DFS 탐색: 스택이 비어있지 않은 동안 반복
+    while (!isEmpty(&stack)) {
+        Point cur = peek(&stack); // 현재 위치 확인 (스택 최상단)
+
+        // 현재 위치가 출구라면 탐색 종료
+        if (cur.x == end.x && cur.y == end.y) {
+            found = 1; // 출구 발견 표시
+            break;
+        }
+
+        int moved = 0; // 현재 위치에서 이동 성공 여부
+
+        // 5. 네 방향(상, 하, 좌, 우) 탐색
+        for (int dir = 0; dir < 4; dir++) {
+            int nx = cur.x + dx[dir]; // 다음 행 위치
+            int ny = cur.y + dy[dir]; // 다음 열 위치
+
+            // 다음 위치가 미로 내부이고, 방문하지 않았고, 이동 가능한 곳인지 검사
+            if (isValid(nx, ny) && !visited[nx][ny] && (maze[nx][ny] == '0' || maze[nx][ny] == 'E')) {
+                visited[nx][ny] = 1;     // 방문 처리
+                Point nextPos;           // 다음 위치 변수 선언
+                nextPos.x = nx;
+                nextPos.y = ny;
+                push(&stack, nextPos);   // 스택에 다음 위치 추가
+                moved = 1;               // 이동 성공 표시
+                break;                   // 한 방향 이동 후 탐색 종료
+            }
+        }
+
+        // 6. 네 방향 모두 이동할 수 없으면 현재 위치에서 되돌아감 (백트래킹)
+        if (!moved) {
+            pop(&stack); // 현재 위치 제거
+        }
+    }
+
+    // 7. 탐색 결과 출력
+    if (found) {
+        printf("미로 탈출 성공! 경로 표시:\n");
+
+        // 7-1. 원본 미로를 손상시키지 않기 위해 복사본 생성
+        char maze_path[MAX][MAX];
+        for (int i = 0; i < N; i++)
+            for (int j = 0; j < M; j++)
+                maze_path[i][j] = maze[i][j];
+
+        // 7-2. 스택에 저장된 경로를 따라 '*' 문자로 표시 (S, E는 그대로)
+        for (int i = 0; i <= stack.top; i++) {
+            int x = stack.data[i].x;
+            int y = stack.data[i].y;
+            if (maze_path[x][y] != 'S' && maze_path[x][y] != 'E') {
+                maze_path[x][y] = '*';
+            }
+        }
+
+        // 7-3. 최종 미로 및 경로 출력 (행렬 형태로)
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < M; j++) {
+                printf("%c ", maze_path[i][j]);
+            }
+            printf("\n");
+        }
+    }
+    else {
+        // 출구까지의 경로를 찾지 못한 경우 메시지 출력
+        printf("미로 탈출 실패!\n");
+    }
+
+    return 0; // 프로그램 정상 종료
 }
