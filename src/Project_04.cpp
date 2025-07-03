@@ -1,23 +1,21 @@
 /*
   프로그램 개요:
-  이 프로그램은 MP3 재생 시뮬레이터로, 사용자가 곡을 재생하고 이전 곡, 다음 곡으로
-  이동할 수 있는 기능을 제공합니다.
+  이 프로그램은 사용자가 입력한 DNA 염기서열이 올바른 염기쌍으로 구성되어 있는지 검사합니다.
 
-  주요 기능:
-  - play [곡명]: 새로운 곡을 재생하며, 현재 재생 중인 곡은 이전 곡 스택에 저장
-  - prev: 이전에 재생했던 곡으로 이동 (이전 곡 스택에서 꺼내옴)
-  - next: 이전에 되돌렸던 곡에서 다시 앞으로 이동 (다음 곡 스택에서 꺼내옴)
-  - list: 이전 곡과 다음 곡 스택의 내용을 출력하여 현재 상태 확인 가능
-  - exit: 프로그램 종료
+  검사 규칙:
+  - DNA 염기쌍은 다음과 같이 정확하게 매칭되어야 합니다:
+    A는 T와, T는 A와, G는 C와, C는 G와 짝을 이룹니다.
 
-  내부 구조:
-  - 두 개의 스택(prevStack, nextStack)을 사용하여 이전 곡과 다음 곡 목록을 관리
-  - 현재 재생 중인 곡을 별도의 변수(currentSong)에 저장
-  - 새로운 곡 재생 시 다음 곡 스택을 초기화하여 앞으로 가는 이력이 사라지도록 처리
+  작동 방식:
+  - 입력받은 DNA 문자열의 앞 절반을 스택에 저장합니다.
+  - 뒤 절반의 각 염기와 스택에서 꺼낸 염기를 하나씩 비교하여 올바른 짝인지 확인합니다.
 
   특징:
-  - 스택 자료구조를 활용하여 이전/다음 곡 탐색 기능을 효율적으로 구현
-  - 명령어 기반 입력으로 직관적인 조작 가능
+  - 염기쌍이 올바르지 않은 경우 어느 위치에서 오류가 발생했는지를 사람 기준(1부터 시작)으로 출력합니다.
+  - 전체 쌍이 모두 맞으면 성공 메시지를 출력합니다.
+
+  제한:
+  - 입력된 DNA 염기서열 길이는 짝수여야 합니다.
 */
 
 #define _CRT_SECURE_NO_WARNINGS
@@ -25,156 +23,101 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX 100          // 스택 최대 크기
-#define TITLE_LEN 100    // 곡 제목 최대 길이
+#define MAX 100
 
-// 문자열을 저장하는 스택 구조체 정의
+// 스택 구조체 정의: 문자 배열과 top 포인터 포함
 typedef struct {
-    char data[MAX][TITLE_LEN];  // 곡 제목 저장 배열 (2차원)
-    int top;                    // 스택의 현재 top 인덱스
+    char data[MAX];  // 스택에 저장할 염기 문자 배열
+    int top;         // 현재 top 위치 (가장 최근에 push된 요소의 인덱스)
 } Stack;
 
-// 스택 초기화 함수: top을 -1로 설정해 빈 상태로 만듦
+// 스택 초기화 함수: top을 -1로 설정
 void initStack(Stack* s) {
     s->top = -1;
 }
 
-// 스택이 비었는지 확인하는 함수 (비어있으면 1 반환)
+// 스택이 비었는지 확인
 int isEmpty(Stack* s) {
     return s->top == -1;
 }
 
-// 스택이 가득 찼는지 확인하는 함수 (가득 찼으면 1 반환)
+// 스택이 가득 찼는지 확인
 int isFull(Stack* s) {
     return s->top == MAX - 1;
 }
 
-// 스택에 문자열(push) 추가하는 함수
-void push(Stack* s, const char* str) {
-    if (isFull(s)) {                    // 가득 찼으면 경고 출력 후 함수 종료
-        printf("스택이 가득 찼습니다!\n");
-        return;
+// 스택에 문자 하나 push
+void push(Stack* s, char c) {
+    if (isFull(s)) {
+        printf("스택 오버플로우 발생!\n");
+        exit(1);
     }
-    strcpy(s->data[++(s->top)], str);  // top 증가 후 해당 위치에 문자열 복사
+    s->data[++(s->top)] = c;
 }
 
-// 스택에서 문자열(pop) 꺼내는 함수
-char* pop(Stack* s) {
-    if (isEmpty(s)) {                   // 비었으면 NULL 반환
-        return NULL;
+// 스택에서 문자 하나 pop
+char pop(Stack* s) {
+    if (isEmpty(s)) {
+        printf("스택 언더플로우 발생!\n");
+        exit(1);
     }
-    return s->data[(s->top)--];        // 현재 top 위치 문자열 반환 후 top 감소
+    return s->data[(s->top)--];
 }
 
-// 스택의 가장 위 문자열을 확인하는 함수 (pop하지 않고 반환)
-char* peek(Stack* s) {
-    if (isEmpty(s)) {                   // 비었으면 NULL 반환
-        return NULL;
-    }
-    return s->data[s->top];             // top 위치 문자열 반환
-}
-
-// 스택 내부 상태 출력 함수
-// name: 스택 이름 (예: "이전 곡 스택", "다음 곡 스택")
-void printStack(Stack* s, const char* name) {
-    printf("\n-- %s 목록 (최신 → 과거) --\n", name);
-    if (isEmpty(s)) {                   // 비어있으면 메시지 출력
-        printf("   (비어 있음)\n");
-        return;
-    }
-    // top에서부터 0까지 출력하여 최신 항목부터 오래된 항목 순서로 표시
-    for (int i = s->top; i >= 0; i--) {
-        printf("   -> %s\n", s->data[i]);
-    }
-}
-
-// 사용자에게 명령어 안내를 출력하는 함수
-void printHelp() {
-    printf("\n명령어 안내:\n");
-    printf("  play [곡명]  - 새 곡 재생\n");
-    printf("  prev         - 이전 곡 재생\n");
-    printf("  next         - 다음 곡 재생\n");
-    printf("  list         - 이전/다음 곡 목록 보기\n");
-    printf("  exit         - 프로그램 종료\n");
-    printf("------------------------------\n");
+// 두 문자가 DNA 염기쌍 관계인지 확인하는 함수
+int isPair(char a, char b) {
+    return (a == 'A' && b == 'T') ||
+        (a == 'T' && b == 'A') ||
+        (a == 'G' && b == 'C') ||
+        (a == 'C' && b == 'G');
 }
 
 int main() {
-    Stack prevStack, nextStack;         // 이전 곡 스택과 다음 곡 스택 선언
-    initStack(&prevStack);              // 이전 곡 스택 초기화
-    initStack(&nextStack);              // 다음 곡 스택 초기화
+    Stack stack;             // 스택 선언
+    initStack(&stack);       // 스택 초기화
 
-    char currentSong[TITLE_LEN] = "";  // 현재 재생 중인 곡 (초기값은 없음)
-    char command[20], input[TITLE_LEN];// 사용자 명령어와 입력 곡명 저장용
+    char dna[MAX];           // DNA 염기서열 문자열 저장 배열
 
-    printf("MP3 재생 시뮬레이터 시작\n");
-    printHelp();                       // 프로그램 시작 시 명령어 안내 출력
+    // 사용자로부터 염기서열 입력 받기
+    printf("DNA 염기서열 입력 (예: ATGCAT): ");
+    scanf("%s", dna);
 
-    // 무한 루프를 돌며 사용자 입력 처리
-    while (1) {
-        // 현재 재생 중인 곡 출력 (없으면 별도 표시)
-        printf("\n현재 곡: %s\n", strlen(currentSong) > 0 ? currentSong : "(없음)");
-        printf("명령어 입력 >> ");
-        scanf("%s", command);           // 명령어 입력 받기
+    int len = strlen(dna);   // 입력된 문자열 길이 계산
 
-        // play 명령어 처리: 새로운 곡 재생
-        if (strcmp(command, "play") == 0) {
-            scanf(" %[^\n]", input);    // 공백 포함 곡명 입력 받기
-            if (strlen(currentSong) > 0) {
-                // 현재 곡이 있으면 이전 곡 스택에 넣음
-                push(&prevStack, currentSong);
-            }
-            // 새 곡을 현재 곡으로 설정
-            strcpy(currentSong, input);
+    // DNA 길이는 짝수여야 쌍을 이룰 수 있음
+    if (len % 2 != 0) {
+        printf("염기서열 길이가 홀수입니다. 쌍이 완전하지 않습니다.\n");
+        return 1;
+    }
 
-            // 다음 곡 스택은 초기화 (새 곡 재생 시 앞으로 듣던 곡은 모두 삭제)
-            initStack(&nextStack);
+    int half = len / 2;  // 문자열을 반으로 나눔
 
-            printf("재생 시작: %s\n", currentSong);
-        }
-        // prev 명령어 처리: 이전 곡으로 이동
-        else if (strcmp(command, "prev") == 0) {
-            if (isEmpty(&prevStack)) {
-                // 이전 곡 스택이 비어있으면 안내 메시지 출력
-                printf("이전 곡이 없습니다.\n");
-            }
-            else {
-                // 현재 곡을 다음 곡 스택에 저장
-                push(&nextStack, currentSong);
-                // 이전 곡 스택에서 곡 꺼내 현재 곡으로 설정
-                strcpy(currentSong, pop(&prevStack));
-                printf("이전 곡 재생: %s\n", currentSong);
-            }
-        }
-        // next 명령어 처리: 다음 곡으로 이동
-        else if (strcmp(command, "next") == 0) {
-            if (isEmpty(&nextStack)) {
-                // 다음 곡 스택이 비어있으면 안내 메시지 출력
-                printf("다음 곡이 없습니다.\n");
-            }
-            else {
-                // 현재 곡을 이전 곡 스택에 저장
-                push(&prevStack, currentSong);
-                // 다음 곡 스택에서 곡 꺼내 현재 곡으로 설정
-                strcpy(currentSong, pop(&nextStack));
-                printf("다음 곡 재생: %s\n", currentSong);
-            }
-        }
-        // list 명령어 처리: 이전/다음 곡 목록 출력
-        else if (strcmp(command, "list") == 0) {
-            printStack(&prevStack, "이전 곡 스택");
-            printStack(&nextStack, "다음 곡 스택");
-        }
-        // exit 명령어 처리: 프로그램 종료
-        else if (strcmp(command, "exit") == 0) {
-            printf("프로그램을 종료합니다.\n");
+    // 앞 절반을 스택에 push
+    for (int i = 0; i < half; i++) {
+        push(&stack, dna[i]);
+    }
+
+    // 뒤 절반을 앞 절반과 비교
+    int valid = 1; // 기본값은 쌍이 모두 맞는 것으로 설정
+
+    for (int i = half; i < len; i++) {
+        char fromStack = pop(&stack);  // 스택에서 한 글자 꺼냄
+        char current = dna[i];         // 현재 검사할 염기
+
+        if (!isPair(fromStack, current)) {
+            // 짝이 맞지 않는 경우: 오류 메시지 출력
+            // 비교 중인 글자는 문자열에서 i번째 위치에 있으므로
+            // 사람 기준으로는 (i+1)번째 글자임
+            printf("짝이 맞지 않습니다: %c - %c (DNA 문자열의 %d번째 글자)\n",
+                fromStack, current, i + 1);
+            valid = 0;
             break;
         }
-        // 알 수 없는 명령어 처리
-        else {
-            printf("알 수 없는 명령입니다. 다시 시도하세요.\n");
-            printHelp();  // 모르는 명령어일 때 명령어 안내 다시 출력
-        }
+    }
+
+    // 모든 쌍이 맞는 경우
+    if (valid) {
+        printf("모든 염기쌍이 정확히 맞습니다!\n");
     }
 
     return 0;

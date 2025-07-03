@@ -1,209 +1,141 @@
 /*
   프로그램 개요:
-  이 프로그램은 Depth First Search(DFS) 알고리즘을 사용하여
-  2차원 미로에서 시작점 'S'에서 출구 'E'까지의 경로를 탐색하는 미로 탈출 시뮬레이터입니다.
+  이 프로그램은 간단한 Undo/Redo 메모장 프로그램입니다.
+  사용자는 "add" 명령어로 메모를 추가하고, "undo" 명령어로 마지막 추가를 취소하며,
+  "redo" 명령어로 취소된 메모를 다시 실행할 수 있습니다.
+  "view" 명령어를 사용하여 현재까지 저장된 메모 내용을 확인할 수 있으며,
+  "exit" 명령어를 사용하여 프로그램을 종료합니다.
 
   주요 기능:
-  - 스택을 활용해 DFS 방식으로 미로를 탐색합니다.
-  - 이동 가능한 경로(길 '0' 또는 출구 'E')를 따라 탐색하며,
-    방문했던 곳은 다시 방문하지 않도록 처리합니다.
-  - 출구에 도달하면 탐색 경로를 '*' 문자로 표시하여 출력합니다.
-  - 경로가 없으면 실패 메시지를 출력합니다.
-
-  입력:
-  - 미로의 크기 (행과 열)
-  - 미로 정보 (문자열): 'S'는 시작점, 'E'는 출구, '0'은 이동 가능한 길, '1'은 벽
-
-  출력:
-  - 경로가 존재할 경우 미로와 경로를 '*'로 표시한 결과 출력
-  - 경로가 없으면 실패 메시지 출력
+  - add [문자열]: 메모에 새로운 내용을 추가합니다.
+  - undo: 마지막 추가된 메모 내용을 취소하고 redo 스택에 저장합니다.
+  - redo: 취소된 메모 내용을 다시 실행하여 메모에 복원합니다.
+  - view: 현재 저장된 메모 내용을 모두 출력합니다.
+  - exit: 프로그램을 종료합니다.
 
   내부 구조:
-  - 스택 자료구조로 DFS 탐색을 구현
-  - 방문 여부를 별도의 배열로 관리하여 중복 방문 방지
-  - 백트래킹을 통해 경로 탐색
+  - 두 개의 스택(undo_stack, redo_stack)을 사용하여 Undo/Redo 기능을 구현합니다.
+  - undo_stack은 현재 메모에 저장된 내용을 관리하며, redo_stack은 Undo된 내용을 임시로 보관합니다.
 */
 
-#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-#define MAX 100  // 미로 최대 크기 (100x100)
+#define MAX_STACK 100  // 스택에 저장할 최대 항목 수
+#define MAX_STR 100    // 저장할 문자열의 최대 길이
 
-// 좌표를 나타내기 위한 구조체
+// 스택 구조체 정의: 문자열 배열을 이용하여 데이터를 저장
 typedef struct {
-    int x, y;  // 미로 내에서의 행과 열 좌표
-} Point;
-
-// 스택 구조체 (Point 배열과 top 인덱스 포함)
-typedef struct {
-    Point data[MAX]; // 스택에 저장할 Point 배열
-    int top;         // 스택의 최상단 인덱스 (비어있으면 -1)
+    char data[MAX_STACK][MAX_STR];  // 문자열들을 저장할 배열
+    int top;                        // 현재 스택의 top 인덱스
 } Stack;
 
-// 스택 초기화 함수: 스택을 빈 상태로 설정 (top = -1)
+// 스택 초기화: 스택을 빈 상태로 만들기 위해 top을 -1로 초기화
 void initStack(Stack* s) {
     s->top = -1;
 }
 
-// 스택이 비어있는지 확인하는 함수
-// 비어있으면 1(true), 아니면 0(false) 반환
+// 스택이 비어있는지 확인: top이 -1이면 스택이 비어있으므로 1 반환, 아니면 0 반환
 int isEmpty(Stack* s) {
     return s->top == -1;
 }
 
-// 스택이 가득 찼는지 확인하는 함수
-// 가득 차면 1(true), 아니면 0(false) 반환
+// 스택이 가득 찼는지 확인: top이 MAX_STACK - 1이면 스택이 가득 찬 것이므로 1 반환, 아니면 0 반환
 int isFull(Stack* s) {
-    return s->top == MAX - 1;
+    return s->top == MAX_STACK - 1;
 }
 
-// 스택에 새로운 Point 추가하기 (push 함수)
-// 만약 스택이 가득 찼으면 오류 메시지 출력 후 종료
-void push(Stack* s, Point p) {
+// 문자열을 스택에 push: 스택이 가득 차지 않았다면 문자열을 추가
+void push(Stack* s, const char* str) {
     if (isFull(s)) {
         printf("스택이 가득 찼습니다!\n");
-        exit(1);
+        return;
     }
-    s->data[++(s->top)] = p;  // top을 1 증가시키고 해당 위치에 값 저장
+    s->top++;                        // top 인덱스를 증가시킨 후
+    strcpy(s->data[s->top], str);    // 새 위치에 문자열 복사
 }
 
-// 스택에서 마지막에 추가된 Point를 제거 및 반환 (pop 함수)
-// 만약 스택이 비어있으면 오류 메시지 출력 후 종료
-Point pop(Stack* s) {
+// 문자열을 스택에서 pop: 스택이 비어 있지 않다면 top 위치의 문자열을 반환하고 top 감소
+char* pop(Stack* s) {
     if (isEmpty(s)) {
-        printf("스택이 비어있습니다!\n");
-        exit(1);
+        return NULL;
     }
-    return s->data[(s->top)--]; // 현재 top의 값을 반환 후 top 감소
+    return s->data[s->top--];        // 현재 top의 문자열을 반환 후 top 감소
 }
 
-// 스택의 마지막 요소를 확인하는 함수 (제거하지 않고 반환)
-// 스택이 비어있으면 오류 메시지 출력 후 종료
-Point peek(Stack* s) {
+// 스택의 현재 내용을 전체 출력: 저장된 문자열들을 순서대로 출력
+void printStack(Stack* s) {
     if (isEmpty(s)) {
-        printf("스택이 비어있습니다!\n");
-        exit(1);
+        printf("현재 작성된 내용이 없습니다.\n");
+        return;
     }
-    return s->data[s->top]; // top 위치의 Point 반환
+    printf("==== 현재 내용 ====\n");
+    for (int i = 0; i <= s->top; i++) {
+        printf("%s", s->data[i]);
+    }
+    printf("===================\n");
 }
 
-// 미로 크기 및 미로 정보를 저장하는 전역 변수
-int N, M;                // 미로의 행(N)과 열(M) 크기
-char maze[MAX][MAX];     // 미로 배열: 문자로 저장 (S, E, 0, 1)
-int visited[MAX][MAX];   // 방문 여부 배열 (1: 방문, 0: 미방문)
-
-// 이동 방향 배열 (상, 하, 좌, 우 순서)
-int dx[4] = { -1, 1, 0, 0 }; // 행 변화량
-int dy[4] = { 0, 0, -1, 1 }; // 열 변화량
-
-// 주어진 (x, y)가 미로 범위 내에 있는지 검사하는 함수
-// 유효한 좌표이면 1(true), 아니면 0(false)
-int isValid(int x, int y) {
-    return (x >= 0 && x < N&& y >= 0 && y < M);
-}
-
-// 메인 함수: 미로 입력, DFS 탐색 수행 및 결과 출력
+// 메인 함수: 사용자 명령어에 따라 스택 작업(add, undo, redo, view, exit)을 수행
 int main() {
-    Point start, end; // 시작점(S)과 출구(E)의 좌표 저장 변수
-    Stack stack;      // DFS 탐색용 스택
-    initStack(&stack); // 스택 초기화
+    // Undo와 Redo를 위한 두 개의 스택 선언 및 초기화
+    Stack undo_stack, redo_stack;
+    initStack(&undo_stack);
+    initStack(&redo_stack);
 
-    // 1. 미로 크기 입력 받기
-    printf("미로 크기 입력 (행 열): ");
-    scanf("%d %d", &N, &M);
+    char input[200];  // 사용자 입력을 저장할 버퍼
 
-    // 2. 미로 정보 입력 및 시작점과 출구 위치 찾기
-    printf("미로 입력 (S=시작, E=출구, 0=길, 1=벽):\n");
-    for (int i = 0; i < N; i++) {
-        scanf("%s", maze[i]);  // 한 행 문자열 입력
-        for (int j = 0; j < M; j++) {
-            // 시작점 좌표 저장
-            if (maze[i][j] == 'S') {
-                start.x = i;
-                start.y = j;
-            }
-            // 출구 좌표 저장
-            else if (maze[i][j] == 'E') {
-                end.x = i;
-                end.y = j;
-            }
-            visited[i][j] = 0;  // 방문 여부 초기화 (0: 방문 안함)
+    // 프로그램 설명 출력
+    printf("간단한 Undo/Redo 메모장 (명령어: add, undo, redo, view, exit)\n");
+
+    while (1) {
+        printf("명령어 입력: ");
+        fgets(input, sizeof(input), stdin);  // 사용자로부터 한 줄 입력 받음
+
+        // "add" 명령어 처리: "add " 뒤에 오는 문자열을 undo_stack에 추가하고 redo_stack 초기화
+        if (strncmp(input, "add ", 4) == 0) {
+            char* text = input + 4;  // "add " 이후의 문자열 포인터
+            push(&undo_stack, text);
+            // 새로운 명령이 추가되면 이전 redo 기록은 무효화됨
+            initStack(&redo_stack);
         }
-    }
-
-    // 3. 시작점을 스택에 넣고 방문 처리
-    push(&stack, start);
-    visited[start.x][start.y] = 1;
-
-    int found = 0; // 출구에 도달했는지 여부 표시 (0: 미발견, 1: 발견)
-
-    // 4. DFS 탐색: 스택이 비어있지 않은 동안 반복
-    while (!isEmpty(&stack)) {
-        Point cur = peek(&stack); // 현재 위치 확인 (스택 최상단)
-
-        // 현재 위치가 출구라면 탐색 종료
-        if (cur.x == end.x && cur.y == end.y) {
-            found = 1; // 출구 발견 표시
+        // "undo" 명령어 처리: undo_stack에서 최근 추가된 문자열을 pop하여 redo_stack에 저장
+        else if (strncmp(input, "undo", 4) == 0) {
+            char* undone = pop(&undo_stack);
+            if (undone) {
+                push(&redo_stack, undone);
+                printf("Undo: %s", undone);
+            }
+            else {
+                printf("되돌릴 내용이 없습니다.\n");
+            }
+        }
+        // "redo" 명령어 처리: redo_stack에서 최근 제거된 문자열을 pop하여 다시 undo_stack에 추가
+        else if (strncmp(input, "redo", 4) == 0) {
+            char* redone = pop(&redo_stack);
+            if (redone) {
+                push(&undo_stack, redone);
+                printf("Redo: %s", redone);
+            }
+            else {
+                printf("다시 실행할 내용이 없습니다.\n");
+            }
+        }
+        // "view" 명령어 처리: 현재 undo_stack에 저장된 모든 문자열을 출력
+        else if (strncmp(input, "view", 4) == 0) {
+            printStack(&undo_stack);
+        }
+        // "exit" 명령어 처리: 프로그램 종료
+        else if (strncmp(input, "exit", 4) == 0) {
+            printf("프로그램 종료\n");
             break;
         }
-
-        int moved = 0; // 현재 위치에서 이동 성공 여부
-
-        // 5. 네 방향(상, 하, 좌, 우) 탐색
-        for (int dir = 0; dir < 4; dir++) {
-            int nx = cur.x + dx[dir]; // 다음 행 위치
-            int ny = cur.y + dy[dir]; // 다음 열 위치
-
-            // 다음 위치가 미로 내부이고, 방문하지 않았고, 이동 가능한 곳인지 검사
-            if (isValid(nx, ny) && !visited[nx][ny] && (maze[nx][ny] == '0' || maze[nx][ny] == 'E')) {
-                visited[nx][ny] = 1;     // 방문 처리
-                Point nextPos;           // 다음 위치 변수 선언
-                nextPos.x = nx;
-                nextPos.y = ny;
-                push(&stack, nextPos);   // 스택에 다음 위치 추가
-                moved = 1;               // 이동 성공 표시
-                break;                   // 한 방향 이동 후 탐색 종료
-            }
-        }
-
-        // 6. 네 방향 모두 이동할 수 없으면 현재 위치에서 되돌아감 (백트래킹)
-        if (!moved) {
-            pop(&stack); // 현재 위치 제거
+        // 잘못된 명령어 처리: 허용된 명령어가 아닐 경우 알림
+        else {
+            printf("잘못된 명령입니다. (add, undo, redo, view, exit)\n");
         }
     }
 
-    // 7. 탐색 결과 출력
-    if (found) {
-        printf("미로 탈출 성공! 경로 표시:\n");
-
-        // 7-1. 원본 미로를 손상시키지 않기 위해 복사본 생성
-        char maze_path[MAX][MAX];
-        for (int i = 0; i < N; i++)
-            for (int j = 0; j < M; j++)
-                maze_path[i][j] = maze[i][j];
-
-        // 7-2. 스택에 저장된 경로를 따라 '*' 문자로 표시 (S, E는 그대로)
-        for (int i = 0; i <= stack.top; i++) {
-            int x = stack.data[i].x;
-            int y = stack.data[i].y;
-            if (maze_path[x][y] != 'S' && maze_path[x][y] != 'E') {
-                maze_path[x][y] = '*';
-            }
-        }
-
-        // 7-3. 최종 미로 및 경로 출력 (행렬 형태로)
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < M; j++) {
-                printf("%c ", maze_path[i][j]);
-            }
-            printf("\n");
-        }
-    }
-    else {
-        // 출구까지의 경로를 찾지 못한 경우 메시지 출력
-        printf("미로 탈출 실패!\n");
-    }
-
-    return 0; // 프로그램 정상 종료
+    return 0;
 }
