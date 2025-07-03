@@ -30,7 +30,7 @@
     <ClCompile Include="Project_04.cpp">
       <Filter>소스 파일\src</Filter>
     </ClCompile>
-    <ClCompile Include="Project_05.cpp">
+    <ClCompile Include="Project_06.cpp">
       <Filter>소스 파일\src</Filter>
     </ClCompile>
     <ClCompile Include="Project_08.cpp">
