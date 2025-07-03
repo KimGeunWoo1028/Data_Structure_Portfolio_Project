@@ -1,123 +1,124 @@
 /*
- * 프로그램명: 간단한 웹 채팅방 메시지 관리 시뮬레이터 (C언어)
- * 목적:
- *   - 사용자가 입력한 채팅 메시지를 순서대로 저장하고,
- *   - 현재 저장된 메시지를 확인하거나 마지막 메시지를 삭제할 수 있으며,
- *   - '/exit' 명령어로 프로그램을 종료할 수 있는 시뮬레이터.
- *
- * 기능:
- *   - 일반 문자열 입력 시 메시지로 저장됨.
- *   - '/view' 명령: 저장된 모든 메시지를 번호와 함께 출력.
- *   - '/delete' 명령: 가장 마지막에 저장된 메시지를 삭제.
- *   - '/exit' 명령: 프로그램 종료.
- *
- * 특징:
- *   - 구조체를 사용해 메시지를 배열에 저장하고, 메시지 개수를 추적.
- *   - 최대 메시지 수(MAX_MSG)와 메시지 길이(MAX_LEN)를 상수로 제한.
- *   - 실제 채팅 서버는 아니지만, 메시지 저장/관리의 기초 구조를 구현함.
- */
+  프로그램명: 간단한 웹 채팅방 메시지 관리 시뮬레이터
+  목적:
+    - 채팅 메시지를 큐(FIFO 구조)에 저장
+    - 큐의 최대 용량을 초과하면 가장 오래된 메시지를 자동 삭제
+    - 사용자 명령에 따라 메시지를 추가, 삭제, 전체 출력
+  특징:
+    - 원형 큐 구조 사용 (고정된 버퍼 내에서 메모리 재사용)
+    - "send"로 메시지 추가
+    - "view"로 모든 메시지 출력
+    - "delete"로 가장 오래된 메시지 수동 삭제
+    - "exit"으로 종료
+*/
 
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_MSG 100     // 최대 저장할 수 있는 메시지 수
-#define MAX_LEN 100     // 한 메시지의 최대 길이
+#define MAX_MESSAGES 10     // 큐에 저장 가능한 최대 메시지 수
+#define MAX_LEN 100        // 한 메시지의 최대 길이
 
- // 메시지를 저장하는 구조체 정의
+// 큐 구조체 정의
 typedef struct {
-    char messages[MAX_MSG][MAX_LEN];  // 메시지를 저장하는 2차원 배열
-    int count;                        // 현재 저장된 메시지 개수
-} Chat;
+    char messages[MAX_MESSAGES][MAX_LEN]; // 메시지 저장 배열 (2차원)
+    int front;  // 가장 오래된 메시지 위치
+    int rear;   // 가장 마지막에 추가된 메시지 위치
+    int size;   // 현재 큐에 저장된 메시지 수
+} MessageQueue;
 
-// 메시지를 추가하는 함수
-void addMessage(Chat* chat, const char* msg) {
-    if (chat->count >= MAX_MSG) {
-        // 최대 개수를 초과한 경우 에러 출력
-        printf("메시지 저장 공간이 가득 찼습니다!\n");
-        return;
-    }
-
-    // 새로운 메시지를 배열에 복사 (길이 초과 방지)
-    strncpy(chat->messages[chat->count], msg, MAX_LEN - 1);
-    chat->messages[chat->count][MAX_LEN - 1] = '\0'; // 널 종료 보장
-    chat->count++; // 메시지 수 증가
+// 큐 초기화 함수
+void initQueue(MessageQueue* q) {
+    q->front = 0;
+    q->rear = -1;
+    q->size = 0;
 }
 
-// 저장된 모든 메시지를 출력하는 함수
-void viewMessages(const Chat* chat) {
-    if (chat->count == 0) {
-        printf("저장된 메시지가 없습니다.\n");
-        return;
-    }
-
-    printf("\n[ 전체 메시지 목록 ]\n");
-    for (int i = 0; i < chat->count; i++) {
-        printf("%2d: %s\n", i + 1, chat->messages[i]);  // 1번부터 출력
-    }
-    printf("----------------------\n");
+// 큐가 비어있는지 확인
+int isEmpty(MessageQueue* q) {
+    return q->size == 0;
 }
 
-// 마지막 메시지를 삭제하는 함수
-void deleteLastMessage(Chat* chat) {
-    if (chat->count == 0) {
-        // 삭제할 메시지가 없을 경우
+// 큐가 가득 찼는지 확인
+int isFull(MessageQueue* q) {
+    return q->size == MAX_MESSAGES;
+}
+
+// 큐에 메시지 추가 (enqueue)
+void enqueue(MessageQueue* q, const char* msg) {
+    if (isFull(q)) {
+        // 큐가 가득 찼으면 가장 오래된 메시지를 먼저 제거
+        printf("[자동 삭제] 메시지 초과로 오래된 메시지 제거: %s\n", q->messages[q->front]);
+        q->front = (q->front + 1) % MAX_MESSAGES;
+        q->size--;
+    }
+    // 새로운 메시지 추가
+    q->rear = (q->rear + 1) % MAX_MESSAGES;
+    strcpy(q->messages[q->rear], msg);
+    q->size++;
+    printf("[메시지 추가] %s\n", msg);
+}
+
+// 큐에서 메시지 삭제 (dequeue)
+void dequeue(MessageQueue* q) {
+    if (isEmpty(q)) {
         printf("삭제할 메시지가 없습니다.\n");
         return;
     }
-
-    // 가장 최근 메시지를 출력한 후 삭제
-    printf("삭제된 메시지: %s\n", chat->messages[chat->count - 1]);
-    chat->count--; // 메시지 수 감소
+    printf("[메시지 삭제] %s\n", q->messages[q->front]);
+    q->front = (q->front + 1) % MAX_MESSAGES;
+    q->size--;
 }
 
-// 메인 함수
+// 큐의 모든 메시지 출력
+void viewMessages(MessageQueue* q) {
+    if (isEmpty(q)) {
+        printf("[대화 없음]\n");
+        return;
+    }
+    printf("\n[채팅 메시지 목록] (최신 순 아님)\n");
+    for (int i = 0; i < q->size; i++) {
+        int index = (q->front + i) % MAX_MESSAGES;
+        printf("%d: %s\n", i + 1, q->messages[index]);
+    }
+}
+
 int main() {
-    Chat chat;           // 메시지 저장용 구조체 변수 선언
-    chat.count = 0;      // 메시지 수 초기화
+    MessageQueue chatQueue;
+    initQueue(&chatQueue);
 
-    char input[MAX_LEN]; // 사용자 입력 저장용 문자열 배열
+    char command[10];
+    char message[MAX_LEN];
 
-    // 프로그램 시작 메시지 및 명령어 안내
-    printf("=== 간단한 웹 채팅방 메시지 시뮬레이터 ===\n");
-    printf("명령어:\n");
-    printf("  메시지 입력: 일반 문자열\n");
-    printf("  /view       : 전체 메시지 보기\n");
-    printf("  /delete     : 마지막 메시지 삭제\n");
-    printf("  /exit       : 프로그램 종료\n");
+    printf("=== 간단한 웹 채팅방 메시지 관리 시뮬레이터 ===\n");
+    printf("명령어 목록: send / view / delete / exit\n");
 
-    // 무한 루프: 사용자 입력을 계속해서 받음
     while (1) {
-        printf("\n입력 >> ");
-        fgets(input, sizeof(input), stdin); // 입력 받기 (공백 포함)
+        printf("\n> 명령어 입력: ");
+        scanf("%s", command);
 
-        // 입력 끝의 개행 문자('\n') 제거
-        input[strcspn(input, "\n")] = '\0';
-
-        // 입력이 '/exit'이면 종료
-        if (strcmp(input, "/exit") == 0) {
-            printf("채팅 종료.\n");
+        if (strcmp(command, "send") == 0) {
+            getchar();  // 공백 문자 제거
+            printf("보낼 메시지: ");
+            fgets(message, sizeof(message), stdin);
+            message[strcspn(message, "\n")] = '\0'; // 개행 문자 제거
+            enqueue(&chatQueue, message);
+        }
+        else if (strcmp(command, "view") == 0) {
+            viewMessages(&chatQueue);
+        }
+        else if (strcmp(command, "delete") == 0) {
+            dequeue(&chatQueue);
+        }
+        else if (strcmp(command, "exit") == 0) {
+            printf("프로그램 종료\n");
             break;
         }
-        // 입력이 '/view'이면 전체 메시지 출력
-        else if (strcmp(input, "/view") == 0) {
-            viewMessages(&chat);
-        }
-        // 입력이 '/delete'이면 마지막 메시지 삭제
-        else if (strcmp(input, "/delete") == 0) {
-            deleteLastMessage(&chat);
-        }
-        // 일반 문자열 입력이면 메시지 저장
-        else if (strlen(input) > 0) {
-            addMessage(&chat, input);
-            printf("메시지 저장 완료.\n");
-        }
-        // 빈 문자열 입력 처리
         else {
-            printf("빈 입력은 저장되지 않습니다.\n");
+            printf("잘못된 명령어입니다. 다시 시도하세요.\n");
         }
     }
 
-    return 0; // 프로그램 종료
+    return 0;
 }
