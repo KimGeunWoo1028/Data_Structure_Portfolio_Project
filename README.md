@@ -42,11 +42,15 @@ g++ 01_Infix_to_Postfix_Program.cpp -o calc
 ./calc
 ```
 
+---
+
 ### 개발 환경
 - 언어: C (C99 기준)
 - 컴파일러: gcc, clang
 - 운영체제: Windows / Linux / macOS
 - 개발 도구: Visual Studio, VS Code, Code::Blocks 등
+
+---
 
 ### 주요 학습 내용
 - 스택, 큐, 배열 기반 자료구조 활용
@@ -56,10 +60,14 @@ g++ 01_Infix_to_Postfix_Program.cpp -o calc
 - 채팅 메시지 큐 관리, 자동완성 시뮬레이션
 - 카드 뽑기/셔플/반환 등 게임 기반 로직
 
+---
+
 ### 작성자
 - 이름: 김근우 (컴퓨터공학과)
 - GitHub: [github.com/your_id](https://github.com/your_id)
 - 이메일: your_email@example.com
+
+---
 
 ### 라이센스
 본 저장소의 코드는 **개인 학습용 및 참고용**으로 자유롭게 사용 가능합니다.  
