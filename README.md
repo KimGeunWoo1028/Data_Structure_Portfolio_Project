@@ -1,4 +1,4 @@
-# C Language Simulator & Algorithm Assignments - Project 8
+# C Language Simulator & Algorithm Portfolio
 
 ## 개요
 
@@ -64,8 +64,8 @@ g++ 01_Infix_to_Postfix_Program.cpp -o calc
 
 ### 작성자
 - 이름: 김근우 (컴퓨터공학과)
-- GitHub: [github.com/your_id](https://github.com/your_id)
-- 이메일: your_email@example.com
+- GitHub: https://github.com/KimGeunWoo1028
+- 이메일: jeunghyon1234@gmail.com
 
 ---
 
