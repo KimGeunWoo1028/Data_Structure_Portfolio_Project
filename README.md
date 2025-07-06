@@ -17,14 +17,14 @@
 
 | 번호 | 파일명 | 설명 | 링크 |
 |------|--------|------|------|
-| 01 | `01_Infix_to_Postfix_Program.cpp` | 중위식 → 후위식 변환 및 계산기 | [🔗바로가기](./01_Infix_to_Postfix_Program.cpp) |
-| 02 | `02_Undo_Redo_Note_Program.cpp` | Undo/Redo 메모장 시뮬레이터 | [🔗바로가기](./02_Undo_Redo_Note_Program.cpp) |
-| 03 | `03_Maze_solving_algorithm.cpp` | 미로 탐색 알고리즘 (DFS) | [🔗바로가기](./03_Maze_solving_algorithm.cpp) |
-| 04 | `04_DNA_Base_Pair_Checker.cpp` | DNA 염기쌍 검사기 (A-T, G-C 확인) | [🔗바로가기](./04_DNA_Base_Pair_Checker.cpp) |
-| 05 | `05_MP3_Playback_Simulator.cpp` | MP3 재생 시뮬레이터 (이전/다음 곡) | [🔗바로가기](./05_MP3_Playback_Simulator.cpp) |
-| 06 | `06_Word_Auto-completion_Simulator.cpp` | 단어 자동완성 시뮬레이터 | [🔗바로가기](./06_Word_Auto-completion_Simulator.cpp) |
-| 07 | `07_Chat_Message_Management_Simulator.cpp` | 채팅방 메시지 관리 시뮬레이터 (큐 기반) | [🔗바로가기](./07_Chat_Message_Management_Simulator.cpp) |
-| 08 | `08_Card_deck_Simulator.cpp` | 카드 덱 시뮬레이터 (스택/큐 활용) | [🔗바로가기](./08_Card_deck_Simulator.cpp) |
+| 01 | `01_Infix_to_Postfix_Program.cpp` | 중위식 → 후위식 변환 및 계산기 | [🔗바로가기](src/01_Infix_to_Postfix_Program.cpp) |
+| 02 | `02_Undo_Redo_Note_Program.cpp` | Undo/Redo 메모장 시뮬레이터 | [🔗바로가기](src/02_Undo_Redo_Note_Program.cpp) |
+| 03 | `03_Maze_solving_algorithm.cpp` | 미로 탐색 알고리즘 (DFS) | [🔗바로가기](src/03_Maze_solving_algorithm.cpp) |
+| 04 | `04_DNA_Base_Pair_Checker.cpp` | DNA 염기쌍 검사기 (A-T, G-C 확인) | [🔗바로가기](src/04_DNA_Base_Pair_Checker.cpp) |
+| 05 | `05_MP3_Playback_Simulator.cpp` | MP3 재생 시뮬레이터 (이전/다음 곡) | [🔗바로가기](src/05_MP3_Playback_Simulator.cpp) |
+| 06 | `06_Word_Auto-completion_Simulator.cpp` | 단어 자동완성 시뮬레이터 | [🔗바로가기](src/06_Word_Auto-completion_Simulator.cpp) |
+| 07 | `07_Chat_Message_Management_Simulator.cpp` | 채팅방 메시지 관리 시뮬레이터 (큐 기반) | [🔗바로가기](src/07_Chat_Message_Management_Simulator.cpp) |
+| 08 | `08_Card_deck_Simulator.cpp` | 카드 덱 시뮬레이터 (스택/큐 활용) | [🔗바로가기](src/08_Card_deck_Simulator.cpp) |
 
 ---
 
