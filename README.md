@@ -40,7 +40,8 @@ gcc 01_Infix_to_Postfix_Program.cpp -o calc
 
 ---
 
-### 💻 개발 환경
+## 💻 개발 환경
+
 - 언어: C 
 - 컴파일러: gcc, clang
 - 운영체제: Windows / Linux / macOS
@@ -48,7 +49,8 @@ gcc 01_Infix_to_Postfix_Program.cpp -o calc
 
 ---
 
-### 🧠 주요 학습 내용
+## 🧠 주요 학습 내용
+
 - 스택, 큐, 배열 기반 자료구조 응용
 - 문자열 처리 및 조건 검사 알고리즘
 - 후위 표기법 계산, Undo/Redo 흐름 제어
@@ -59,7 +61,8 @@ gcc 01_Infix_to_Postfix_Program.cpp -o calc
   
 ---
 
-### 👨‍💻 작성자
+## 👨‍💻 작성자
+
 - 이름: 김근우
 - 전공: 컴퓨터공학과
 - GitHub: https://github.com/KimGeunWoo1028
@@ -67,6 +70,7 @@ gcc 01_Infix_to_Postfix_Program.cpp -o calc
 
 ---
 
-### 📄 라이센스
+## 📄 라이센스
+
 본 저장소의 코드는 **개인 학습용 및 참고용**으로 자유롭게 사용 가능합니다.  
 단, 상업적 사용이나 무단 배포는 제한됩니다.
